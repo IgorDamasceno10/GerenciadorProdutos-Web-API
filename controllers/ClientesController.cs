@@ -18,9 +18,14 @@ namespace GerenciadorPedidosAPI.Controllers
 
         // GET: v1/clientes
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cliente>>> GetClientes()
+        public async Task<ActionResult<IEnumerable<Cliente>>> GetClientes([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            return await _context.Clientes.ToListAsync();
+            var clientes = await _context.Clientes
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(clientes);
         }
 
         // GET: v1/clientes/{id}
@@ -31,16 +36,27 @@ namespace GerenciadorPedidosAPI.Controllers
 
             if (cliente == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Cliente não encontrado." });
             }
 
-            return cliente;
+            return Ok(cliente);
         }
 
         // POST: v1/clientes
         [HttpPost]
         public async Task<ActionResult<Cliente>> PostCliente(Cliente cliente)
         {
+            // Verificação para garantir que o campo NumeroContato está presente.
+            if (string.IsNullOrEmpty(cliente.NumeroContato))
+            {
+                return BadRequest(new { message = "O número de contato do cliente é obrigatório." });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Dados inválidos.", details = ModelState });
+            }
+
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
 
@@ -53,7 +69,13 @@ namespace GerenciadorPedidosAPI.Controllers
         {
             if (id != cliente.Id)
             {
-                return BadRequest();
+                return BadRequest(new { message = "ID do cliente não corresponde." });
+            }
+
+            // Verificação para garantir que o campo NumeroContato está presente.
+            if (string.IsNullOrEmpty(cliente.NumeroContato))
+            {
+                return BadRequest(new { message = "O número de contato do cliente é obrigatório." });
             }
 
             _context.Entry(cliente).State = EntityState.Modified;
@@ -66,7 +88,7 @@ namespace GerenciadorPedidosAPI.Controllers
             {
                 if (!ClienteExists(id))
                 {
-                    return NotFound();
+                    return NotFound(new { message = "Cliente não encontrado para atualização." });
                 }
                 else
                 {
@@ -84,7 +106,7 @@ namespace GerenciadorPedidosAPI.Controllers
             var cliente = await _context.Clientes.FindAsync(id);
             if (cliente == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Cliente não encontrado para exclusão." });
             }
 
             _context.Clientes.Remove(cliente);

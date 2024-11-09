@@ -18,9 +18,19 @@ namespace GerenciadorPedidosAPI.Controllers
 
         // GET: v1/produtos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Produto>>> GetProdutos()
+        public async Task<ActionResult<IEnumerable<Produto>>> GetProdutos([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            return await _context.Produtos.ToListAsync();
+            var produtos = await _context.Produtos
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            if (produtos.Count == 0)
+            {
+                return NotFound(new { message = "Nenhum produto encontrado." });
+            }
+
+            return Ok(produtos);
         }
 
         // GET: v1/produtos/{id}
@@ -31,16 +41,21 @@ namespace GerenciadorPedidosAPI.Controllers
 
             if (produto == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Produto não encontrado." });
             }
 
-            return produto;
+            return Ok(produto);
         }
 
         // POST: v1/produtos
         [HttpPost]
         public async Task<ActionResult<Produto>> PostProduto(Produto produto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Dados inválidos.", details = ModelState });
+            }
+
             _context.Produtos.Add(produto);
             await _context.SaveChangesAsync();
 
@@ -53,7 +68,7 @@ namespace GerenciadorPedidosAPI.Controllers
         {
             if (id != produto.Id)
             {
-                return BadRequest();
+                return BadRequest(new { message = "ID do produto não corresponde ao ID informado." });
             }
 
             _context.Entry(produto).State = EntityState.Modified;
@@ -66,7 +81,7 @@ namespace GerenciadorPedidosAPI.Controllers
             {
                 if (!ProdutoExists(id))
                 {
-                    return NotFound();
+                    return NotFound(new { message = "Produto não encontrado para atualização." });
                 }
                 else
                 {
@@ -84,7 +99,7 @@ namespace GerenciadorPedidosAPI.Controllers
             var produto = await _context.Produtos.FindAsync(id);
             if (produto == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Produto não encontrado para exclusão." });
             }
 
             _context.Produtos.Remove(produto);

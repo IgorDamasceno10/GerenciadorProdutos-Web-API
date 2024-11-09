@@ -26,7 +26,12 @@ namespace GerenciadorPedidosAPI.Controllers
                 .Select(pp => pp.Produto)
                 .ToListAsync();
 
-            return produtos;
+            if (!produtos.Any())
+            {
+                return NotFound($"Nenhum produto encontrado para o pedido de ID {pedidoId}.");
+            }
+
+            return Ok(produtos);
         }
 
         // POST: v1/pedidos/{pedidoId}/produtos
@@ -36,7 +41,12 @@ namespace GerenciadorPedidosAPI.Controllers
             var pedido = await _context.Pedidos.FindAsync(pedidoId);
             if (pedido == null)
             {
-                return NotFound();
+                return NotFound($"Pedido com o ID {pedidoId} não encontrado.");
+            }
+
+            if (pedidoProduto.ProdutoId == 0 || pedidoProduto.Quantidade <= 0)
+            {
+                return BadRequest("Produto inválido ou quantidade não pode ser zero ou negativa.");
             }
 
             pedidoProduto.PedidoId = pedidoId;
@@ -55,7 +65,7 @@ namespace GerenciadorPedidosAPI.Controllers
 
             if (pedidoProduto == null)
             {
-                return NotFound();
+                return NotFound($"Produto com o ID {produtoId} não encontrado no pedido de ID {pedidoId}.");
             }
 
             _context.PedidoProdutos.Remove(pedidoProduto);

@@ -1,10 +1,22 @@
-namespace GerenciadorPedidosAPI.Models; 
+using System.ComponentModel.DataAnnotations;
 
-public class PedidoProduto
+namespace GerenciadorPedidosAPI.Models
 {
-    public int PedidoId { get; set; }
-    public Pedido Pedido { get; set; }
-    public int ProdutoId { get; set; }
-    public Produto Produto { get; set; }
-    public int Quantidade { get; set; }
+    public class PedidoProduto
+    {
+        [Required]
+        public int PedidoId { get; set; }
+
+        [Required]
+        public Pedido Pedido { get; set; }
+
+        [Required]
+        public int ProdutoId { get; set; }
+
+        [Required]
+        public Produto Produto { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "A quantidade deve ser um valor positivo.")]
+        public int Quantidade { get; set; }
+    }
 }

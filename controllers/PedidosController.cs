@@ -18,9 +18,20 @@ namespace GerenciadorPedidosAPI.Controllers
 
         // GET: v1/pedidos
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Pedido>>> GetPedidos()
+        public async Task<ActionResult<IEnumerable<Pedido>>> GetPedidos([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            return await _context.Pedidos.Include(p => p.Cliente).ToListAsync();
+            var pedidos = await _context.Pedidos
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Include(p => p.Cliente)
+                .ToListAsync();
+
+            if (pedidos.Count == 0)
+            {
+                return NotFound(new { message = "Nenhum pedido encontrado." });
+            }
+
+            return Ok(pedidos);
         }
 
         // GET: v1/pedidos/{id}
@@ -31,16 +42,21 @@ namespace GerenciadorPedidosAPI.Controllers
 
             if (pedido == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Pedido não encontrado." });
             }
 
-            return pedido;
+            return Ok(pedido);
         }
 
         // POST: v1/pedidos
         [HttpPost]
         public async Task<ActionResult<Pedido>> PostPedido(Pedido pedido)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new { message = "Dados inválidos.", details = ModelState });
+            }
+
             _context.Pedidos.Add(pedido);
             await _context.SaveChangesAsync();
 
@@ -53,7 +69,7 @@ namespace GerenciadorPedidosAPI.Controllers
         {
             if (id != pedido.Id)
             {
-                return BadRequest();
+                return BadRequest(new { message = "ID do pedido não corresponde ao ID informado." });
             }
 
             _context.Entry(pedido).State = EntityState.Modified;
@@ -66,7 +82,7 @@ namespace GerenciadorPedidosAPI.Controllers
             {
                 if (!PedidoExists(id))
                 {
-                    return NotFound();
+                    return NotFound(new { message = "Pedido não encontrado para atualização." });
                 }
                 else
                 {
@@ -84,7 +100,7 @@ namespace GerenciadorPedidosAPI.Controllers
             var pedido = await _context.Pedidos.FindAsync(id);
             if (pedido == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Pedido não encontrado para exclusão." });
             }
 
             _context.Pedidos.Remove(pedido);
